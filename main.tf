@@ -9,17 +9,10 @@ module "label" {
 }
 
 locals {
-  kms_key_id              = "${length(var.kms_key_id) > 0 ? var.kms_key_id : format("alias/%s-%s-chamber", var.namespace, var.stage)}"
-  chamber_service         = "${var.chamber_service == "" ? basename(pathexpand(path.module)) : var.chamber_service}"
   mq_admin_user           = "${length(var.mq_admin_user) > 0 ? var.mq_admin_user : random_string.mq_admin_user.result}"
   mq_admin_password       = "${length(var.mq_admin_password) > 0 ? var.mq_admin_password : random_string.mq_admin_password.result}"
   mq_application_user     = "${length(var.mq_application_user) > 0 ? var.mq_application_user : random_string.mq_application_user.result}"
   mq_application_password = "${length(var.mq_application_password) > 0 ? var.mq_application_password : random_string.mq_application_password.result}"
-}
-
-resource "aws_kms_key" "chamber_kms_key" {
-  description             = "Nor1 Amazon MQ"
-  deletion_window_in_days = 10
 }
 
 resource "random_string" "mq_admin_user" {
@@ -42,40 +35,6 @@ resource "random_string" "mq_application_user" {
 resource "random_string" "mq_application_password" {
   length  = 16
   special = false
-}
-
-resource "aws_ssm_parameter" "mq_master_username" {
-  name        = "${format(var.chamber_parameter_name, local.chamber_service, "mq_admin_username")}"
-  value       = "${local.mq_admin_user}"
-  description = "MQ Username for the master user"
-  type        = "String"
-  overwrite   = "${var.overwrite_ssm_parameter}"
-}
-
-resource "aws_ssm_parameter" "mq_master_password" {
-  name        = "${format(var.chamber_parameter_name, local.chamber_service, "mq_admin_password")}"
-  value       = "${local.mq_admin_password}"
-  description = "MQ Password for the master user"
-  type        = "SecureString"
-  key_id      = aws_kms_key.chamber_kms_key.id
-  overwrite   = "${var.overwrite_ssm_parameter}"
-}
-
-resource "aws_ssm_parameter" "mq_application_username" {
-  name        = "${format(var.chamber_parameter_name, local.chamber_service, "mq_application_username")}"
-  value       = "${local.mq_application_user}"
-  description = "AMQ username for the application user"
-  type        = "String"
-  overwrite   = "${var.overwrite_ssm_parameter}"
-}
-
-resource "aws_ssm_parameter" "mq_application_password" {
-  name        = "${format(var.chamber_parameter_name, local.chamber_service, "mq_application_password")}"
-  value       = "${local.mq_application_password}"
-  description = "AMQ password for the application user"
-  type        = "SecureString"
-  key_id      = aws_kms_key.chamber_kms_key.id
-  overwrite   = "${var.overwrite_ssm_parameter}"
 }
 
 resource "aws_mq_broker" "default" {
